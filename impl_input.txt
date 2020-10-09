@@ -1,2 +1,8 @@
-a = {0,1,2,3,4,5};
-output a[0];
+if(a>b){
+    output a;
+} elif(b<a){
+    output b;
+} else {
+    output c;
+}
+

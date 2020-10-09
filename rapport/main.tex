@@ -1,50 +1,321 @@
 %        File: main.tex
-%     Created: tor okt 08 03:00  2020 C
-% Last Change: tor okt 08 03:00  2020 C
+%     Created: fre okt 09 09:00  2020 C
+% Last Change: fre okt 09 09:00  2020 C
 %
 \documentclass[a4paper]{article}
+\usepackage[margin=2cm]{geometry}
 \usepackage[]{graphicx}
-\title{Mandatory 01}
-\author{Martin Mårtensson}
+\usepackage{framed,color,verbatim}
+\definecolor{shadecolor}{rgb}{.9, .9, .9}
+\newenvironment{code}%
+   {\snugshade\verbatim}%
+   {\endverbatim\endsnugshade}
+\title{Compiler Mandatory}
+\author{Martin Mårtenssen s.195469 \& Daniel Styrbæk-Petersen s.143861}
+
 \begin{document}
 \maketitle
-\section{The tasks}
-\begin{itemize}
-  \item Grammar stuff
-    \begin{itemize}
-      \item \textbf{Task 1:} Add subtraction and division to the program.
-      \item \textbf{Task 2:} Implement condition branching, for loops and arrays.
-    \end{itemize}
-  \item Compiler stuff
-    \begin{itemize}
-      \item \textbf{Task 3:} Implement the stuff from task 1 into a java compiler.
-      \item \textbf{Task 4:} Implement variable assignment into a java compiler.
-    \end{itemize}
-\end{itemize}
-\textit{}
-\subsection{Grammar}
-I added the following constants.
-\begin{verbatim}
-PLUS    : '+'
-MINUS   : '-'
-MULT    : '*'
-DIV     : '/'
-\end{verbatim}
-And to the expr i added the following expressions:
-\begin{verbatim}
-expr
-  : e1=expr op=(MULT | DIV) e2=expr     # multiplication
-  | e1=expr op=(PLUS | MINUS) e2=expr   # addition
-  ;
-\end{verbatim}
-Multiplication is important to have before addition in the grammar file, because we need to do the operations in the right order.
+To implement this compiler we have created some grammar rules, using regex to tokenize the stream of chars, (that code basically is). So that we can use them to create a parse tree, which is how we organize the tokens, so that we easily can compile them.
 
-The following command wil create the following parse tree:
-\begin{verbatim}
-1+2*3;
-\end{verbatim}
+We have used ANTLR4 which is a tool for generating parse trees and java code reflecting a simple grammar file (regex rules).
+
+
+\section{ Task 1}
+
+\subsection{Grammar}
+We added the following constants to our grammar file
+\begin{code}
+PLUS  : '+'   ;
+MINUS : '-'   ;
+MULT  : '*'   ;
+DIV   : '/'   ;
+\end{code}
+
+And we extended the expr but adding the following expressions:
+\begin{code}
+expr
+  : e1=expr op=(MULT | DIV) e2=expr       #multiplication
+  | e1=expr op=(PLUS | MINUS) e2=expr     #addition
+  ;
+\end{code}
+
+The reason **multiplication** is before addition is because we want our program to check for possible miltiplications on the line, before it checks for additions. This is important because it will help us, going down our parse tree in the right order.
+
+So if eg. we wrote:
+\begin{code}
+a+b*c;
+\end{code}
+
+Then we would get the following parse tree
+
 \begin{center}
-  \includegraphics[width=.5\textwidth]{img1.png}
+  \includegraphics[width=.3\textwidth]{task1.png}
 \end{center}
 
+Where the calculation would return the value of $a + (b \cdot c)$ even though $a + b$ is written before $b \cdot c$
+
+\subsection{Java implementation}
+To implement the changes made to the grammar, we altered the visitAddition() and visitMultiplication() functions implemented from the **Interface** `implVisit.java`.
+
+As seen in the changes to the grammar file, we made it so each operand can be identified by the ***op*** variable. This made implementing
+subtraction and division, relatively simple by adding and if-statement to the methods in java, as seen in the alteration of the visitAddition method below:
+\begin{code}
+public Double visitAddition(implParser.AdditionContext ctx) {
+if(ctx.op.getText() == "+")
+  return visit(ctx.e1)+visit(ctx.e2);
+else
+  return visit(ctx.e1)-visit(ctx.e2);
+}
+\end{code}
+  
+\section{ Task 2 }
+
+\subsection{Conditional branching}
+  
+\subsubsection{Grammar}
+We added the following constant to the grammar file
+\begin{code}
+AND   : '&&'   ;
+OR    : '||'   ;
+EQ    : '=='   ;
+NEQ   : '!='   ;
+LEQ   : '<='   ;
+GEQ   : '>='   ;
+GT    : '>'    ;
+LT    : '<'    ;
+NOT   : '!'    ;
+\end{code}
+
+Then we extended the condition grammar to the following:
+\begin{code}
+condition 
+    : NOT c=condition                           # notCondition
+    | c1=condition op=(OR|AND) c2=condition     # logicalCondition
+    | e1=expr op=(EQ | NEQ) e2=expr             # equalityCondition
+    | e1=expr op=(LEQ | GEQ | LT | GT ) e2=expr # relationalCondition
+    ; 
+\end{code}
+
+Worth noting in the implementation of the *OR* and *AND* conditions, we made use of recursive grammar. So c1 and c2 could theoritcally include other conditions.
+
+If we write the following code:
+\begin{code}
+if(!a>b||c==d){
+    output e;
+}
+\end{code}
+
+Then we would get the following parse tree.
+
+\begin{center}
+  \includegraphics[width=.5\textwidth]{task2.png}
+\end{center}
+
+\subsubsection{ Implementation}
+We extended the visitor class in the main.java file to accomodate these changes, the overall implementation strategy was similiar to that of task 1. Because of the ability to identify the operand during the visit. The implementation of our logical condition can be seen below
+\begin{code}
+public Double visitLogicalCondition(implParser.LogicalConditionContext ctx){
+    if(ctx.op.getText().equals("&&")){
+        if (visit(ctx.c1) == 1.0 && visit(ctx.c2) == 1.0)
+            return 1.0;
+        else
+            return 0.0;
+    } else if(ctx.op.getText().equals("||")){
+        if (visit(ctx.c1) == 1.0 || visit(ctx.c2) == 1.0)
+            return 1.0;
+        else
+            return 0.0;
+    } else
+        return null;
+}
+\end{code}
+
+We see in this implementation, that after we have identified whether we are dealing with an *AND* or a *OR* statement, we visit the conditions c1 and c2, to see what values they return. Important to note, that c1 and c2 themselves are condition and could theoretacilly be *AND* or *OR* statements themselves. Then based on the logical statement we either return 1.0 or 0.0.
+ 
+\subsection{For-loops}
+
+\subsubsection{Grammar}
+To implement this simplified for-loop, we expand the command grammar, to include the following line
+  
+\begin{code}
+FOR '(' x=ID '=' e1=expr '..' e2=expr ')' p=program		#forloop
+\end{code}
+We first make an assignment, followed by two expression seperated by the '..' indicator. 
+
+So if we consider the following code:
+\begin{code}
+for(i=0..10){
+    output a[i];
+}
+\end{code}
+
+Then we would get the following parse tree.
+
+\begin{center}
+  \includegraphics[width=.5\textwidth]{task2-2.png}
+\end{center}
+  
+\subsubsection{Implementation}
+In the implementation of the simplified for-loop we altered the visitor class in the main.java file, and extended it with a visitForLoop method, that can be seen below:
+  
+\begin{code}
+public Double visitForloop(implParser.ForloopContext ctx){
+    String variable = ctx.x.getText();
+    env.setVariable(variable,visit(ctx.e1));
+    Double end=visit(ctx.e2);
+    Double value = env.getVariable(variable)-1;
+    while(value < end){
+        env.setVariable(variable,++value);
+        visit(ctx.p);
+        value = env.getVariable(variable);
+    }
+    return null;
+  }
+\end{code}
+
+The method starts by getting the name of the variable used in the for-loop, by visiting the x. This string is then assigned to the
+value of the expression e1. We then use a simple incrementing while-loop to iterate over the loop.
+  
+\subsection{Simplified Arrays}
+  
+\subsubsection{Grammar}
+To implement the array grammar, we needed to expressions. One for initialization of a complete array in the form of:
+\begin{code}
+a = { 0, 1, 2, 3, 4, 5 };
+\end{code}
+
+To accomplish this we added an array initializing part to the expr grammar:
+\begin{code}
+'{' e=expr (',' es+=expr)* '}'		#array
+\end{code}
+
+Now we need grammar that can handle individual assigenments of an array, aswell as reassignment of the indexed elements of an already initialized array. For this purpose, the following was added to expression:
+\begin{code}
+x=expr '[' e=expr ']'			#arrayIndex
+\end{code}
+
+The strategy here is to take the previusly assigned variable from when the array was initialized, and combine it with the expression inside the square brackets. 
+
+So if we write the following code:
+\begin{code}
+a = {0,1,2,3,4,5};
+output a[0];
+\end{code}
+
+
+Then we would get the following parse tree.
+
+\begin{center}
+  \includegraphics[width=.8\textwidth]{task2-3.png}
+\end{center}
+
+
+\subsubsection{Implementation}
+The implementation of the visitArray() and visitArrayindex() methods can be seen below
+\begin{code}
+public Double visitArray(implParser.ArrayContext ctx){
+    env.setVariable(this.lastVariable+"[0]",visit(ctx.e));
+    int i = 1;
+    for(implParser.ExprContext e: ctx.es){
+        env.setVariable(this.lastVariable+"["+i+"]",visit(e));
+        i++;
+    }
+    return 0.0;
+}
+\end{code}
+
+\begin{code}
+public Double visitArrayIndex(implParser.ArrayIndexContext ctx){
+    int index = visit(ctx.e).intValue();
+    return env.getVariable(ctx.x.getText()+"["+index+"]");
+}
+\end{code}
+
+In the visitArray() method we take advantage of the setVariable function, to assign each instance of a variable to its corrosponding index like so:
+\begin{code}
+a = {0,2,4,8,16} -> a[0] = 0, a[1] = 2 ... a[4] = 16
+\end{code}
+
+And then when we visit the array index we simply return the value of the assigned variable.
+
+\subsection{IF-statement}
+\subsubsection{Grammar}
+We added the following constants to the grammar:
+
+\begin{code}
+IF    : 'if'   ;
+ELIF  : 'elif' ;
+ELSE  : 'else' ;
+\end{code}
+
+To implement the conditional branch "if", we added the following to the command grammar.
+ 
+\begin{code}
+IF	'(' c=condition ')' p=program cs+=IfElse*		#ifBlock
+\end{code}
+  
+In the if-statement grammar, we also decided to implement the possibility of adding any amount of else or elseif condition. The ifElse grammar is structured in the following way:
+\begin{code}
+ifElse
+    : ELIF '(' c=condition ')' p=program	#elifStat
+	| ELSE p=program				        #elseStat
+	;
+\end{code}
+
+The else-if works much like the if-statement itself, by checking for a condition. While the else statement simply requires a program.
+
+if we would use the following code:
+\begin{code}
+if(a>b){
+    output a;
+} elif(b<a){
+    output b;
+} else {
+    output c;
+}
+\end{code}
+
+then we would get this parse tree.
+
+\begin{center}
+  \includegraphics[width=.8\textwidth]{task2-4.png}
+\end{center}
+
+  
+\subsubsection{Implementation}
+We implemented the visitIfBlock method, in the following way:
+\begin{code}
+public Double visitIfBlock(implParser.IfBlockContext ctx){
+    if(visit(ctx.c) == 1.0)
+        return visit(ctx.p);
+    else
+        for(implParser.IfElseContext c: ctx.cs)
+            if(visit(c) == 1.0) break;
+    return null;
+}
+\end{code}
+
+\begin{code}
+public Double visitElifStat(implParser.ElifStatContext ctx){
+    if(visit(ctx.c) == 1.0){
+        visit(ctx.p);
+        return 1.0;
+    }
+    return 0.0;
+}
+\end{code}
+
+\begin{code}
+public Double visitElseStat(implParser.ElseStatContext ctx){
+    visit(ctx.p);
+    return 1.0;
+}
+\end{code}
+
+The `visitElseStat()` method will always return `1.0` so it will never be possible to make more tnan one else statement in an if/else block, since the `visitIfBlock()` will stop looping over `IfElseContexts` when an `IfElseContext` returns 1, which means that the `program` that belongs to the condition will be "visited"
+
+\section{Task 3 and 4}
+Task 3 and 4 has been solved during the other tasks.
 \end{document}
+
+

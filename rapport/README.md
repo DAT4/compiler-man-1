@@ -1,10 +1,10 @@
-<!---
+---
 title: "Compiler Mandatory"
 author: "Martin Mårtenssen s.195469 & Daniel Styrbæk-Petersen s.143861"
 date: October 9, 2020
 geometry: margin=2cm
 output: pdf_document
--->
+---
 
 # Implementation of a simple compiler
 To implement this compiler we have created some grammar rules, using regex to tokenize the stream of chars, (that code basically is). So that we can use them to create a parse tree, which is how we organize the tokens, so that we easily can compile them.
@@ -42,7 +42,7 @@ a+b*c;
 
 Then we would get the following parse tree
 
-![parse tree](./task1.png)
+![parse tree](./task1.png){ width=20% }
 
 Where the calculation would return the value of $a + (b \cdot c)$ even though $a + b$ is written before $b \cdot c$
 
@@ -237,14 +237,79 @@ a = {0,2,4,8,16} -> a[0] = 0, a[1] = 2 ... a[4] = 16
 And then when we visit the array index we simply return the value of the assigned variable.
 
 ### IF-statement
-
 #### Grammar
+We added the following constants to the grammar:
+```
+IF    : 'if'   ;
+ELIF  : 'elif' ;
+ELSE  : 'else' ;
+```
+To implement the conditional branch "if", we added the following to the command grammar.
+  
+```java
+IF	'(' c=condition ')' p=program cs+=IfElse*		#ifBlock
+```
+  
+In the if-statement grammar, we also decided to implement the possibility of adding any amount of else or elseif condition. The ifElse grammar is structured in the following way:
 
+```java
+ifElse
+    : ELIF '(' c=condition ')' p=program	#elifStat
+	| ELSE p=program				        #elseStat
+	;
+```
+
+The else-if works much like the if-statement itself, by checking for a condition. While the else statement simply requires a program.
+
+if we would use the following code:
+
+```
+if(a>b){
+    output a;
+} elif(b<a){
+    output b;
+} else {
+    output c;
+}
+```
+
+then we would get this parse tree.
+
+![parse tree](task2-4.png)
+
+  
 #### Implementation
+We implemented the visitIfBlock method, in the following way:
 
-#### Else-statement
+```java
+public Double visitIfBlock(implParser.IfBlockContext ctx){
+    if(visit(ctx.c) == 1.0)
+        return visit(ctx.p);
+    else
+        for(implParser.IfElseContext c: ctx.cs)
+            if(visit(c) == 1.0) break;
+    return null;
+}
+```
 
-## Task 3
-This is written under the implementation sections in the other tasks.
+```java
+public Double visitElifStat(implParser.ElifStatContext ctx){
+    if(visit(ctx.c) == 1.0){
+        visit(ctx.p);
+        return 1.0;
+    }
+    return 0.0;
+}
+```
 
-## Task 4
+```java
+public Double visitElseStat(implParser.ElseStatContext ctx){
+    visit(ctx.p);
+    return 1.0;
+}
+```
+
+The `visitElseStat()` method will always return `1.0` so it will never be possible to make more tnan one else statement in an if/else block, since the `visitIfBlock()` will stop looping over `IfElseContexts` when an `IfElseContext` returns 1, which means that the `program` that belongs to the condition will be "visited"
+
+## Task 3 and 4
+Task 3 and 4 has been solved during the other tasks.
