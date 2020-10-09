@@ -68,15 +68,112 @@ NOT   : '!'    ;
   ```
   Or even potientially nested *OR* and *AND* statements.
 #### Implementation
-We extended the visitor class in the main.java file to accomodate these changes, the overall implementation strategy
-  #### For-loops
-  To implement this simplified for-loop, we add
+We extended the visitor class in the main.java file to accomodate these changes, the overall implementation strategy was similiar to that of task 1. Because of the ability to identify the operand during the visit. The implementation of our logical condition can be seen below
+
+```java
+public Double visitLogicalCondition(implParser.LogicalConditionContext ctx){
+        if(ctx.op.getText().equals("&&")){
+            if (visit(ctx.c1) == 1.0 && visit(ctx.c2) == 1.0){
+                return 1.0;
+            }
+            else
+                return 0.0;
+        } else if(ctx.op.getText().equals("||")){
+            if (visit(ctx.c1) == 1.0 || visit(ctx.c2) == 1.0)
+                return 1.0;
+            else
+                return 0.0;
+        } else {
+            return null;
+        }
+    }
+ ```
+ We see in this implementation, that after we have identified whether we are dealing with an *AND' or a *OR* statement, we visit the conditions c1 and c2, to see what values they return. Important to note, that c1 and c2 themselves are condition and could theoretacilly be *AND* or *OR* statements themselves. Then based on the logical statement we either return 1.0 or 0.0.
+ 
+  ### For-loops
+  #### Grammar
+  To implement this simplified for-loop, we expand the command grammar, to include the following line
   
+  ```java
+  FOR '(' x=ID '=' e1=expr '..' e2=expr ')' p=program		#forloop
+  ```
+  We first make an assignment, followed by two expression seperated by the '..' indicator. 
   
-  #### Simplified Arrays
+  #### Implementation
+  In the implementation of the simplified for-loop we altered the visitor class in the main.java file, and extended it with a visitForLoop method, that can be seen below:
   
+  ```java
+  public Double visitForloop(implParser.ForloopContext ctx){
+        String variable = ctx.x.getText();
+        env.setVariable(variable,visit(ctx.e1));
+        Double end=visit(ctx.e2);
+        Double value = env.getVariable(variable)-1;
+        while(value < end){
+            env.setVariable(variable,++value);
+            visit(ctx.p);
+            value = env.getVariable(variable);
+        }
+        return null;
+    }
+ ```
+
+
+The method starts by getting the name of the variable used in the for-loop, by visiting the x. This string is then assigned to the
+value of the expression e1. We then use a simple incrementing while-loop to iterate over the loop.
   
+  ### Simplified Arrays
   
+  #### Grammar
+  To implement the array grammar, we needed to expressions. One for initialization of a complete array in the form of:
+  ```java
+  a = { 0, 1, 2, 3, 4, 5 };
+ ```
+ To accomplish this we added an array initializing part to the expr grammar:
+ ```java
+ '{' e=expr (',' es+=expr)* '}'		#array
+ ```
+ 
+ Now we need grammar that can handle individual assigenments of an array, aswell as reassignment of the indexed elements of an already initialized array. For this purpose, the following was added to expression:
+ 
+ ```java
+ x=expr '[' e=expr ']'			#arrayIndex
+ ```
+ 
+ The strategy here is to take the previusly assigned variable from when the array was initialized, and combine it with the expression inside the square brackets. 
+  
+  #### Implementation
+  The implementation of the visitArray() and visitArrayindex() methods can be seen below
+  
+  ```java
+  public Double visitArray(implParser.ArrayContext ctx){
+        env.setVariable(this.lastVariable+"[0]",visit(ctx.e));
+        int i = 1;
+        for(implParser.ExprContext e: ctx.es){
+            env.setVariable(this.lastVariable+"["+i+"]",visit(e));
+            i++;
+        }
+        return 0.0;
+
+    }
+	public Double visitArrayIndex(implParser.ArrayIndexContext ctx){
+        int index = visit(ctx.e).intValue();
+        return env.getVariable(ctx.x.getText()+"["+index+"]");
+    }
+   ```
+   In the visitArray() method we take advantage of the setVariable function, to assign each instance of a variable to its corrosponding index like so:
+   
+   ```java
+   a = {0,2,4,8,16} -> a[0] = 0, a[1] = 2 ... a[4] = 16
+  ```
+  And then when we visit the array index we simply return the value of the assigned variable.
+  
+  ### IF-statement
+  
+  #### Grammar
+  
+  #### Implementation
+  
+  #### Else-statement
   
   ## Task 3
   ### Grammar
