@@ -81,8 +81,6 @@ class Interpreter extends AbstractParseTreeVisitor<Double> implements implVisito
     }
 	public Double visitLogicalCondition(implParser.LogicalConditionContext ctx){
         if(ctx.op.getText().equals("&&")){
-            System.out.println(visit(ctx.c1));
-            System.out.println(visit(ctx.c2));
             if (visit(ctx.c1) == 1.0 && visit(ctx.c2) == 1.0){
                 return 1.0;
             }
