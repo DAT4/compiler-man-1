@@ -255,7 +255,7 @@ The else-if works much like the if-statement itself, by checking for a condition
         return null;
     }
    ```
-   The method works by first visiting the condition, and then based on the 
+   The method works by first visiting the condition, and then based on the outcome of this condition, visiting p. Then it iterates over any possible else or else-if statements that may exist, and visits them. As described in more detail in the following section.
   
   #### Else-statement
   
