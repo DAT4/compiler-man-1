@@ -6,6 +6,12 @@ geometry: margin=2cm
 output: pdf_document
 -->
 
+# Implementation of a simple compiler
+To implement this compiler we have created some grammar rules, using regex to tokenize the stream of chars, (that code basically is). So that we can use them to create a parse tree, which is how we organize the tokens, so that we easily can compile them.
+
+We have used ANTLR4 which is a tool for generating parse trees and java code reflecting a simple grammar file (regex rules).
+
+
 ## Task 1
 
 ### Grammar
@@ -185,55 +191,60 @@ Now we need grammar that can handle individual assigenments of an array, aswell 
 x=expr '[' e=expr ']'			#arrayIndex
 ```
 
+The strategy here is to take the previusly assigned variable from when the array was initialized, and combine it with the expression inside the square brackets. 
+
 So if we write the following code:
 
 ```java
-a = { 0, 1, 2, 3, 4, 5 };
+a = {0,1,2,3,4,5};
+output a[0];
 ```
+
 
 Then we would get the following parse tree.
 
-![parse tree]
+![parse tree](task2-3.png)
 
-The strategy here is to take the previusly assigned variable from when the array was initialized, and combine it with the expression inside the square brackets. 
 
 #### Implementation
 The implementation of the visitArray() and visitArrayindex() methods can be seen below
 
-  ```java
-  public Double visitArray(implParser.ArrayContext ctx){
-        env.setVariable(this.lastVariable+"[0]",visit(ctx.e));
-        int i = 1;
-        for(implParser.ExprContext e: ctx.es){
-            env.setVariable(this.lastVariable+"["+i+"]",visit(e));
-            i++;
-        }
-        return 0.0;
+```java
+public Double visitArray(implParser.ArrayContext ctx){
+    env.setVariable(this.lastVariable+"[0]",visit(ctx.e));
+    int i = 1;
+    for(implParser.ExprContext e: ctx.es){
+        env.setVariable(this.lastVariable+"["+i+"]",visit(e));
+        i++;
+    }
+    return 0.0;
+}
+```
 
-    }
-	public Double visitArrayIndex(implParser.ArrayIndexContext ctx){
-        int index = visit(ctx.e).intValue();
-        return env.getVariable(ctx.x.getText()+"["+index+"]");
-    }
-   ```
-   In the visitArray() method we take advantage of the setVariable function, to assign each instance of a variable to its corrosponding index like so:
-   
-   ```java
-   a = {0,2,4,8,16} -> a[0] = 0, a[1] = 2 ... a[4] = 16
-  ```
-  And then when we visit the array index we simply return the value of the assigned variable.
-  
-  ### IF-statement
-  
-  #### Grammar
-  
-  #### Implementation
-  
-  #### Else-statement
-  
-  ## Task 3
-  ### Grammar
-  
-  
-  ## Task 4
-  ### Grammar
+```java
+public Double visitArrayIndex(implParser.ArrayIndexContext ctx){
+    int index = visit(ctx.e).intValue();
+    return env.getVariable(ctx.x.getText()+"["+index+"]");
+}
+```
+
+In the visitArray() method we take advantage of the setVariable function, to assign each instance of a variable to its corrosponding index like so:
+
+```java
+a = {0,2,4,8,16} -> a[0] = 0, a[1] = 2 ... a[4] = 16
+```
+
+And then when we visit the array index we simply return the value of the assigned variable.
+
+### IF-statement
+
+#### Grammar
+
+#### Implementation
+
+#### Else-statement
+
+## Task 3
+This is written under the implementation sections in the other tasks.
+
+## Task 4
