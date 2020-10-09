@@ -298,6 +298,7 @@ public Double visitElifStat(implParser.ElifStatContext ctx){
         visit(ctx.p);
         return 1.0;
     }
+<<<<<<< HEAD:rapport/README.md
     return 0.0;
 }
 ```
@@ -313,3 +314,16 @@ The `visitElseStat()` method will always return `1.0` so it will never be possib
 
 ## Task 3 and 4
 Task 3 and 4 has been solved during the other tasks.
+=======
+   ```
+   The method works by first visiting the condition, and then based on the outcome of this condition, visiting p. Then it iterates over any possible else or else-if statements that may exist, and visits them. As described in more detail in the following section.
+  
+  #### Else-statement
+  
+  ## Task 3
+  ### Grammar
+  
+  
+  ## Task 4
+  ### Grammar
+>>>>>>> 4e81479c573184334340cdfea0c45c05b4f58cee:README.md
