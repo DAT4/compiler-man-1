@@ -224,10 +224,38 @@ The implementation of the visitArray() and visitArrayindex() methods can be seen
   And then when we visit the array index we simply return the value of the assigned variable.
   
   ### IF-statement
-  
   #### Grammar
+  To implement the conditional branch "if", we added the following to the command grammar.
+  
+  ```java
+  IF	'(' c=condition ')' p=program cs+=IfElse*		#ifBlock
+  ```
+  
+  In the if-statement grammar, we also decided to implement the possibility of adding any amount of else or elseif condition. The ifElse grammar is structured in the following way:
+  
+  ```java
+  ifElse
+  	: ELIF '(' c=condition ')' p=program		#elifStat
+	| ELSE p=program				#elseStat
+	;
+```
+The else-if works much like the if-statement itself, by checking for a condition. While the else statement simply requires a program.
   
   #### Implementation
+  We implemented the visitIfBlock method, in the following way:
+  
+  ```java
+  public Double visitIfBlock(implParser.IfBlockContext ctx){
+        if(visit(ctx.c) == 1.0)
+            return visit(ctx.p);
+        else
+            for(implParser.IfElseContext c: ctx.cs)
+                if(visit(c) == 1.0)
+                    break;
+        return null;
+    }
+   ```
+   The method works by first visiting the condition, and then based on the 
   
   #### Else-statement
   
